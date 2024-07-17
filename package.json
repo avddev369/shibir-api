@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "development": "serverless deploy --region ap-south-1 --aws-profile default"
   },
   "author": "Deep Panchal",
   "license": "ISC",

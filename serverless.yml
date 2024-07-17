@@ -1,4 +1,4 @@
-service: magsonapi
+service: shibir
 
 frameworkVersion: "3"
 
