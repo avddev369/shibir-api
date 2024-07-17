@@ -19,7 +19,9 @@ module.exports = (sequelize, Sequelize) => {
         },
         opId: {
             type: Sequelize.INTEGER,
-            allowNull: false
+            allowNull: false,
+            defaultValue: 0,
+
         },
     });
 

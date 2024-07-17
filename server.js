@@ -23,15 +23,17 @@ console.log("Synced db.");
 
 //Routes
 require("./routes/user.routes")(app);
+require("./routes/question.routes")(app);
+require("./routes/answer.routes")(app);
 require("./routes/gernal.routes")(app);
 
 
 app.get("/", (req, res) => {
-    res.json({ message: "Welcome to API Template Application." });
+    res.json({ message: "Welcome to HP Shibir." });
 });
 
 app.post("/", (req, res) => {
-    res.json({ message: "Welcome to API Template Application." });
+    res.json({ message: "Welcome to HP Shibir." });
 });
 
 
