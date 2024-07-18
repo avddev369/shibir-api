@@ -24,3 +24,42 @@ exports.insertAnswer = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+exports.getAnswer = async (req, res) => {
+    try {
+        const answers = await db.answer.findAll({
+            include: [
+                {
+                    model: db.user,
+                    attributes: ['userId', 'name'],
+                    // as: "user" 
+                },
+                {
+                    model: db.question,
+                    attributes: ['queId', 'title', 'queType'], 
+                },
+                {
+                    model: db.option,
+                    attributes: ['opId', 'option'], 
+                },
+            ],
+        });
+
+        const formattedResponse = answers.map(ans => ({
+            ansId: ans.ansId,
+            userId: ans.user_master.userId,
+            username: ans.user_master.name,
+            queId: ans.que_master.queId,
+            questionTitle: ans.que_master.title,
+            questionType: ans.que_master.queType,
+            answer: ans.answer,
+            opId: ans.option_master.opId,
+            option: ans.option_master.option,
+        }));
+
+        res.json(formattedResponse);
+    } catch (error) {
+        console.error('Error fetching answers:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
