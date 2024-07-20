@@ -17,6 +17,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
+        isUrl: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
         opId: {
             type: Sequelize.INTEGER,
             allowNull: false,

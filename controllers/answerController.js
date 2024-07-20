@@ -4,7 +4,7 @@ const myRes = require("../utils/responseHandler");
 
 
 exports.insertAnswer = async (req, res) => {
-    const { userId, queId, answer: answerText, opId } = req.body;
+    const { userId, queId, answer: answerText, opId, isUrl } = req.body;
 
     try {
         if (!userId || !queId || !answerText) {
@@ -16,6 +16,7 @@ exports.insertAnswer = async (req, res) => {
             queId,
             answer: answerText,
             opId,
+            isUrl
         });
 
         res.status(201).json(newAnswer);

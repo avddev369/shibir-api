@@ -9,6 +9,10 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
+        hintText: {
+            type: Sequelize.STRING(100),
+            allowNull: false
+        },
         isRequired: {
             type: Sequelize.BOOLEAN,
             defaultValue: false,
@@ -19,12 +23,16 @@ module.exports = (sequelize, Sequelize) => {
         },
         queType: {
             type: Sequelize.ENUM,
-            values: ['TEXT', 'CHECKBOX', 'RADIO', 'TEXTAREA', 'IMAGE'],
+            values: ['TEXT', 'CHECKBOX', 'RADIO', 'AUDIO', 'IMAGE', 'VIDEO'],
             allowNull: false,
         },
         ssId: {
             type: Sequelize.INTEGER,
             allowNull: false
+        },
+        priority: {
+            type: Sequelize.INTEGER,
+            allowNull: true
         },
     });
 

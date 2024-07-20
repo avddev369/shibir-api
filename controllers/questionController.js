@@ -15,11 +15,17 @@ exports.getQuestionWithOption = async (req, res) => {
                     as: 'question',
                 },
             ],
+            order: [['priority', 'ASC']]
         });
 
         const formattedResponse = questionWithOptions.map(question => ({
             queId: question.queId,
             type: question.queType,
+            title: question.title,
+            priority: question.priority,
+            hintText: question.hintText,
+            isGroupQue: question.isGroupQue,
+            isRequired: question.isRequired,
             options: question.question.map(option => ({
                 opId: option.opId,
                 title: option.option, 
