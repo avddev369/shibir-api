@@ -158,7 +158,7 @@
 
         async function fetchMatrixData() {
             try {
-                const response = await fetch('http://192.168.29.234:8090/getDataQr');
+                const response = await fetch('http://localhost:3690/getDataQr');
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }

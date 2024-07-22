@@ -211,7 +211,7 @@
         };
 
         const setupWebSocket = () => {
-            ws = new WebSocket('ws://192.168.29.184:8080');
+            ws = new WebSocket('ws://localhost:8080');
 
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
@@ -249,7 +249,7 @@
 
         const loadData = async () => {
             try {
-                const response = await fetch('http://localhost:8090/getData');
+                const response = await fetch('http://localhost:3690/getData');
 
                 if (!response.ok) throw new Error('Network response was not ok');
                 data = await response.json();
