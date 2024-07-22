@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot-Matrix Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+
+        #matrixContainer {
+            display: grid;
+            grid-template-columns: repeat(7, 20px);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .dot {
+            width: 20px;
+            height: 20px;
+            background-color: black;
+            border-radius: 50%;
+        }
+
+        .inactive {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        #controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dot-Matrix Display</h1>
+    <div id="controls">
+        <label for="characterInput">Enter a character:</label>
+        <input type="text" id="characterInput" maxlength="1" />
+        <button onclick="displayCharacter()">Display</button>
+    </div>
+    <div id="matrixContainer"></div>
+
+    <script>
+        const characters = {
+            "A": [
+                [0, 1, 1, 1, 1, 1, 0],
+                [1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1],
+                [1, 1, 1, 1, 1, 1, 1],
+                [1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 0, 0, 0, 1]
+            ],
+            // Add more characters here
+        };
+
+        const matrixContainer = document.getElementById('matrixContainer');
+
+        function displayCharacter() {
+            const char = document.getElementById('characterInput').value.toUpperCase();
+            const matrix = characters[char];
+
+            if (!matrix) {
+                alert('Character not defined in the matrix');
+                return;
+            }
+
+            matrixContainer.innerHTML = '';
+
+            matrix.forEach(row => {
+                row.forEach(dot => {
+                    const dotElement = document.createElement('div');
+                    dotElement.className = 'dot';
+                    if (dot === 0) {
+                        dotElement.classList.add('inactive');
+                    }
+                    matrixContainer.appendChild(dotElement);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

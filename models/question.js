@@ -23,7 +23,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         queType: {
             type: Sequelize.ENUM,
-            values: ['TEXT', 'CHECKBOX', 'RADIO', 'AUDIO', 'IMAGE', 'VIDEO'],
+            values: ['TEXT', 'CHECKBOX', 'DROPDOWN', 'RADIO', 'AUDIO', 'IMAGE', 'VIDEO'],
             allowNull: false,
         },
         ssId: {

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot-Matrix Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+
+        #matrixContainer {
+            display: grid;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .dot {
+            background-color: black;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .inactive {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #controls>div {
+            margin-bottom: 10px;
+        }
+
+        .shift-button {
+            margin: 5px;
+        }
+
+        .number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            color: white;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Dot-Matrix Display</h1>
+    <div id="controls">
+        <div>
+            <label for="rowInput">Rows:</label>
+            <input type="number" id="rowInput" value="5" min="1" />
+            <label for="colInput">Columns:</label>
+            <input type="number" id="colInput" value="5" min="1" />
+            <label for="scaleInput">Scale:</label>
+            <input type="number" id="scaleInput" value="1" min="1" />
+            <button onclick="updateMatrix()">Update Matrix</button>
+        </div>
+        <div>
+            <label for="digitSelect">Select Digit:</label>
+            <select id="digitSelect">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="digitColorPicker">Digit Color:</label>
+            <input type="color" id="digitColorPicker" value="#000000" />
+            <label for="gapInput">Gap:</label>
+            <input type="number" id="gapInput" value="1" min="0" />
+            <button onclick="addDigit()">Add Digit</button>
+        </div>
+        <div>
+            <button class="shift-button" onclick="shiftMatrix('left')">Left Shift</button>
+            <button class="shift-button" onclick="shiftMatrix('right')">Right Shift</button>
+            <button class="shift-button" onclick="shiftMatrix('up')">Up Shift</button>
+            <button class="shift-button" onclick="shiftMatrix('down')">Down Shift</button>
+            <button id="sendButton" onclick="sendColorsToClients()">Send</button>
+        </div>
+        <div>
+            <label for="defaultColorPicker">Default Color:</label>
+            <input type="color" id="defaultColorPicker" value="#000000" />
+        </div>
+    </div>
+    <div id="matrixContainer"></div>
+
+    <script>
+        const digits = {
+            "1": [
+                [0, 1, 0],
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 1, 0],
+                [1, 1, 1]
+            ],
+            "2": [
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 1]
+            ],
+            "3": [
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1]
+            ],
+            "4": [
+                [1, 0, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [0, 0, 1],
+                [0, 0, 1]
+            ],
+            "5": [
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1]
+            ]
+        };
+
+        let mainMatrix = [];
+        let matrixTop = 0;
+        let matrixLeft = 0;
+        let data = {};
+        let sendData = {};
+        const matrixContainer = document.getElementById('matrixContainer');
+
+        function updateMatrix() {
+            const rows = parseInt(document.getElementById('rowInput').value, 10);
+            const cols = parseInt(document.getElementById('colInput').value, 10);
+            const scale = parseInt(document.getElementById('scaleInput').value, 10);
+
+            mainMatrix = Array.from({ length: rows * scale }, () => Array(cols * scale).fill(0));
+            matrixContainer.style.gridTemplateColumns = `repeat(${cols * scale}, ${20}px)`;
+            matrixContainer.style.gridTemplateRows = `repeat(${rows * scale}, ${20}px)`;
+            renderMainMatrix();
+        }
+
+        async function fetchMatrixData() {
+            try {
+                const response = await fetch('http://192.168.29.234:8090/getDataQr');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const dataRes = await response.json();
+   
+                data = dataRes.data;
+           
+            } catch (error) {
+                console.error('There has been a problem with your fetch operation:', error);
+            }
+        }
+
+        async function renderMainMatrix() {
+            await fetchMatrixData();
+            matrixContainer.innerHTML = '';
+            const color = document.getElementById('defaultColorPicker').value;
+            mainMatrix.forEach((row, rowIndex) => {
+                row.forEach((dot, colIndex) => {
+                    const dotElement = document.createElement('div');
+                    dotElement.className = 'dot';
+                    dotElement.style.backgroundColor = dot === 0 ? color : (dot.color || color);
+
+                    // Calculate and display the sequential number
+                    const sequentialNumber = rowIndex * mainMatrix[0].length + colIndex + 1;
+                    const numberElement = document.createElement('span');
+               
+                    numberElement.textContent = data[sequentialNumber] || 0;
+                    numberElement.className = 'number';
+                    sendData[(data[sequentialNumber] || 0)] = (dot === 0 ? color : (dot.color || color)).slice(1);
+                    dotElement.appendChild(numberElement);
+                    dotElement.dataset.row = rowIndex;
+                    dotElement.dataset.col = colIndex;
+                    dotElement.addEventListener('click', () => {
+                        if (isDrawing) {
+                            dotElement.style.backgroundColor = currentColor;
+                            mainMatrix[rowIndex][colIndex] = { color: currentColor };
+                        }
+                    });
+                    matrixContainer.appendChild(dotElement);
+                });
+            });
+        }
+
+        function addDigit() {
+            const digit = document.getElementById('digitSelect').value;
+            const rows = parseInt(document.getElementById('rowInput').value, 10);
+            const cols = parseInt(document.getElementById('colInput').value, 10);
+            const gap = parseInt(document.getElementById('gapInput').value, 10);
+            const scale = parseInt(document.getElementById('scaleInput').value, 10);
+            const color = document.getElementById('digitColorPicker').value;
+
+            const digitMatrix = digits[digit].map(row => row.map(cell => cell ? 1 : 0));
+            const digitWidth = digitMatrix[0].length * scale;
+            const digitHeight = digitMatrix.length * scale;
+
+            if (matrixLeft + digitWidth > cols * scale) {
+                matrixLeft = 0;
+                matrixTop += digitHeight + gap;
+            }
+
+            if (matrixTop + digitHeight > rows * scale) {
+                alert("Not enough space to add the digit.");
+                return;
+            }
+
+            for (let i = 0; i < digitMatrix.length; i++) {
+                for (let j = 0; j < digitMatrix[i].length; j++) {
+                    if (digitMatrix[i][j] === 1) {
+                        for (let k = 0; k < scale; k++) {
+                            for (let l = 0; l < scale; l++) {
+                                if (matrixTop + i * scale + k < rows * scale && matrixLeft + j * scale + l < cols * scale) {
+                                    mainMatrix[matrixTop + i * scale + k][matrixLeft + j * scale + l] = { color };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            matrixLeft += digitWidth + gap;
+            renderMainMatrix();
+        }
+
+        function shiftMatrix(direction) {
+            const shiftAmount = 1;
+            const newMatrix = Array.from({ length: mainMatrix.length }, () => Array(mainMatrix[0].length).fill(0));
+            const defaultColor = document.getElementById('defaultColorPicker').value;
+
+            for (let i = 0; i < mainMatrix.length; i++) {
+                for (let j = 0; j < mainMatrix[0].length; j++) {
+                    let newRow = i;
+                    let newCol = j;
+
+                    switch (direction) {
+                        case 'left':
+                            newCol = (j - shiftAmount + mainMatrix[0].length) % mainMatrix[0].length;
+                            break;
+                        case 'right':
+                            newCol = (j + shiftAmount) % mainMatrix[0].length;
+                            break;
+                        case 'up':
+                            newRow = (i - shiftAmount + mainMatrix.length) % mainMatrix.length;
+                            break;
+                        case 'down':
+                            newRow = (i + shiftAmount) % mainMatrix.length;
+                            break;
+                    }
+                    newMatrix[newRow][newCol] = mainMatrix[i][j] || 0;
+                }
+            }
+
+            mainMatrix = newMatrix;
+            renderMainMatrix();
+        }
+
+        // Drawing Mode
+        let isDrawing = false;
+        let currentColor = '#000000';
+
+        document.addEventListener('mousedown', () => {
+            isDrawing = true;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        document.getElementById('defaultColorPicker').addEventListener('input', (event) => {
+            currentColor = event.target.value;
+        });
+
+        updateMatrix(); // Initialize the matrix
+        renderMainMatrix(); // Initial render
+
+        const sendColorsToClients = () => {
+        //    const dataToSend = mainMatrix.map((row, rowIndex) => 
+        //     row.map((cell, colIndex) => {
+        //         const cellElement = document.querySelector(`.dot[data-row='${rowIndex}'][data-col='${colIndex}'].number`);
+        //         const cellText = cellElement ? cellElement.textContent : '';
+        //         return {
+        //             color: cell ? cell.color : 0,
+        //             text: cellText
+        //         };
+        //     })
+        // );
+        console.log(sendData)
+            ws.send(JSON.stringify({ type: 'colorUpdate', defaultColor: "ffffff", colors: sendData }));
+        };
+
+        const rgbToHex = (rgb) => {
+            const rgbValues = rgb.match(/\d+/g);
+            const hex = rgbValues.map((val) => parseInt(val).toString(16).padStart(2, '0')).join('');
+            return `${hex}`;
+        };
+
+        const setupWebSocket = () => {
+            ws = new WebSocket('ws://192.168.29.184:8080');
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.userId !== undefined) {
+                    userId = message.userId;
+
+                } else if (message.connectedUsers !== undefined) {
+                    updateConnectedUsers(message.connectedUsers);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        };
+
+        const updateConnectedUsers = (users) => {
+            const list = document.getElementById('connectedUsers');
+            // list.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `User ID: ${user}`;
+                // list.appendChild(li);
+            });
+        };
+        window.onload = () => {
+            setupWebSocket();
+        };
+    </script>
+</body>
+
+</html>
