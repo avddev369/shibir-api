@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HP Shibir</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+
+        .response.success {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .response.error {
+            border-color: #F44336;
+            color: #F44336;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <label for="rowsInput">Rows:</label>
+        <input type="number" id="rowsInput" min="1" value="11">
+        <label for="colsInput">Columns:</label>
+        <input type="number" id="colsInput" min="1" value="20">
+        <label for="imageInput">Image No.:</label>
+        <input type="number" id="imageInput" min="1">
+        <button id="sendButton" onclick="sendMatrixData()">Send</button>
+    </div>
+    <div id="responseMessage" class="response"></div>
+
+    <script>
+        
+        let ws;
+
+        const sendMatrixData = () => {
+            const rows = parseInt(document.getElementById('rowsInput').value);
+            const cols = parseInt(document.getElementById('colsInput').value);
+            const imageNo = parseInt(document.getElementById('imageInput').value);
+
+            const dataToSend = {
+                type: 'imageData',
+                rows: rows,
+                columns: cols,
+                imageNumber: imageNo
+            };
+
+            console.log("Sending data:", dataToSend);
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(dataToSend));
+                console.log("Data sent successfully");
+            } else {
+                console.error("WebSocket is not open");
+            }
+        };
+
+        const setupWebSocket = () => {
+            ws = new WebSocket('ws://localhost:8080');
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+                document.getElementById('sendButton').disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                const responseMessage = document.getElementById('responseMessage');
+
+                // Display response message
+                responseMessage.textContent = JSON.stringify(message);
+                responseMessage.classList.remove('success', 'error');
+                responseMessage.style.display = 'block';
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                const responseMessage = document.getElementById('responseMessage');
+                responseMessage.textContent = 'WebSocket error occurred. Please try again later.';
+                responseMessage.classList.add('error');
+                responseMessage.style.display = 'block';
+            };
+        };
+
+        window.onload = () => {
+            setupWebSocket();
+        };
+    </script>
+</body>
+
+</html>

@@ -13,7 +13,7 @@ let nextUserId = 1; // Counter for generating new user IDs
 
 wss.on('connection', (ws, req) => {
     // Generate or retrieve a unique client identifier
-    let clientId = req.headers['sec-websocket-key'] || crypto.randomBytes(16).toString('hex');
+    let clientId = req.headers['key'] || crypto.randomBytes(16).toString('hex');
 
     if (connectedUsers[clientId]) {
         // Existing user reconnecting
@@ -37,7 +37,8 @@ wss.on('connection', (ws, req) => {
 
     ws.on('message', (message) => {
         const data = JSON.parse(message);
-        if (data.type === 'colorUpdate') {
+        console.log(data);
+        if (data.type === 'colorUpdate' || data.type === 'imageData') {
             // Broadcast message to all connected users
             Object.values(connectedUsers).forEach(user => {
                 user.ws.send(JSON.stringify(data));

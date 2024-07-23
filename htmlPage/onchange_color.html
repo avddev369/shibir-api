@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HP Shibir</title>
+    <title>4QR JAG MAG</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -46,7 +46,7 @@
 <body>
     <div>
         <label for="colorPicker">Select Cell Color:</label>
-        <input type="color" id="colorPicker" value="#ff0000" oninput="onColorChange(event)">
+        <input type="color" id="colorPicker" value="#ff0000" oninput="onColorChange(event)" disabled>
         <button id="cleanMatrixButton" onclick="cleanMatrix()" disabled>Clean Matrix</button>
         <button id="printButton" onclick="printMatrix()" disabled>Print Matrix</button>
         <button id="sendButton" onclick="sendColorsToClients()" disabled>Send</button>
@@ -59,7 +59,7 @@
 
     <script>
         let data = {};
-        let matrix = Array.from({ length: 11 }, () => Array(20).fill("#"));
+        let matrix = Array.from({ length: 100 }, () => Array(100).fill("#"));
         const placed = new Set();
         let fillColor = "#ff0000"; // Default picked color
         let isMouseDown = false; // Track mouse down state
@@ -93,6 +93,35 @@
             }
         };
 
+        
+        const onColorChange = (e) => {
+            console.log('Selected color:');
+            let color = e.target.value;
+ 
+            console.log('Selected color:', color);
+            const colorsData = {};
+            const cells = document.querySelectorAll('.cell');
+
+            cells.forEach((cell) => {
+                // const bgColor = rgbToHex(getComputedStyle(cell).backgroundColor);
+                const bgColor = color.slice(1,color.length);
+                const clientId = cell.textContent.trim();
+
+                if (clientId) {
+                    colorsData[clientId] = bgColor;
+                }
+            });
+
+            console.log('Colors Data:', colorsData);
+
+            // Send color update message via WebSocket
+            ws.send(JSON.stringify({
+                type: 'colorUpdate',
+                defaultColor: "ffffff",
+                colors: colorsData
+            }));
+        };
+        
         const renderMatrix = () => {
             const container = document.getElementById('matrixContainer');
             container.innerHTML = "";
@@ -178,46 +207,15 @@
             });
         };
 
-        // const updateConnectedUsers = (users) => {
-        //     const list = document.getElementById('connectedUsers');
-        //     list.innerHTML = '';
-        //     users.forEach(user => {
-        //         const li = document.createElement('li');
-        //         li.textContent = `User ID: ${user}`;
-        //         list.appendChild(li);
-        //     });
-        // };
-
-
-
-        const onColorChange = (e) => {
-            console.log('Selected color:');
-            let color = e.target.value;
- 
-            console.log('Selected color:', color);
-            const colorsData = {};
-            const cells = document.querySelectorAll('.cell');
-
-            cells.forEach((cell) => {
-                // const bgColor = rgbToHex(getComputedStyle(cell).backgroundColor);
-                const bgColor = color.slice(1,color.length);
-                const clientId = cell.textContent.trim();
-
-                if (clientId) {
-                    colorsData[clientId] = bgColor;
-                }
+        const updateConnectedUsers = (users) => {
+            const list = document.getElementById('connectedUsers');
+            list.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `User ID: ${user}`;
+                list.appendChild(li);
             });
-
-            console.log('Colors Data:', colorsData);
-
-            // Send color update message via WebSocket
-            ws.send(JSON.stringify({
-                type: 'colorUpdate',
-                defaultColor: "ffffff",
-                colors: colorsData
-            }));
         };
-
 
         const sendColorsToClients = () => {
             const colorsData = {};
@@ -242,7 +240,7 @@
         };
 
         const setupWebSocket = () => {
-            ws = new WebSocket('ws://192.168.29.184:8080');
+            ws = new WebSocket('ws://localhost:8080');
 
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
@@ -256,10 +254,9 @@
                     document.getElementById('cleanMatrixButton').disabled = false;
                     document.getElementById('printButton').disabled = false;
                     document.getElementById('sendButton').disabled = false;
+                } else if (message.connectedUsers !== undefined) {
+                    updateConnectedUsers(message.connectedUsers);
                 }
-                // else if (message.connectedUsers !== undefined) {
-                //     updateConnectedUsers(message.connectedUsers);
-                // }
             };
 
             ws.onclose = () => {
@@ -274,10 +271,14 @@
         document.getElementById('colorPicker').addEventListener('input', (event) => {
             fillColor = event.target.value;
         });
+        const getMidpoint = (rows, cols) => ({
+            x: Math.floor(rows / 2),
+            y: Math.floor(cols / 2)
+        });
 
         const loadData = async () => {
             try {
-                const response = await fetch('http://localhost:8090/getData');
+                const response = await fetch('http://localhost:8081/getData');
 
                 if (!response.ok) throw new Error('Network response was not ok');
                 data = await response.json();
@@ -286,7 +287,12 @@
                 const keys = Object.keys(data);
 
                 // Proceed with placing the cell
-                placeCell(keys[0], 0, 0);
+                const { x, y } = getMidpoint(matrix.length, matrix[0].length);
+
+                // Start placing the first cell from the midpoint
+                if (keys.length > 0) {
+                    placeCell(keys[0], x, y);
+                }
                 renderMatrix();
 
                 // Enable buttons after data is loaded

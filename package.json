@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "api": "nodemon apiServer.js",
-    "socket": "nodemon socketServer.js",
+    "socket": "node socketServer.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "development": "serverless deploy --region ap-south-1 --aws-profile default"
   },

@@ -158,7 +158,7 @@
 
         async function fetchMatrixData() {
             try {
-                const response = await fetch('http://localhost:3690/getDataQr');
+                const response = await fetch('http://localhost:8081/getDataQr');
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
@@ -294,16 +294,6 @@
         renderMainMatrix(); // Initial render
 
         const sendColorsToClients = () => {
-        //    const dataToSend = mainMatrix.map((row, rowIndex) => 
-        //     row.map((cell, colIndex) => {
-        //         const cellElement = document.querySelector(`.dot[data-row='${rowIndex}'][data-col='${colIndex}'].number`);
-        //         const cellText = cellElement ? cellElement.textContent : '';
-        //         return {
-        //             color: cell ? cell.color : 0,
-        //             text: cellText
-        //         };
-        //     })
-        // );
         console.log(sendData)
             ws.send(JSON.stringify({ type: 'colorUpdate', defaultColor: "ffffff", colors: sendData }));
         };
@@ -315,7 +305,7 @@
         };
 
         const setupWebSocket = () => {
-            ws = new WebSocket('ws://192.168.29.184:8080');
+            ws = new WebSocket('ws://localhost:8080');
 
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
