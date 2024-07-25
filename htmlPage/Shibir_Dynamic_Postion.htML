@@ -249,12 +249,12 @@
 
         const loadData = async () => {
             try {
-                const response = await fetch('http://27.116.52.24:8081/getData');
+                const response = await fetch('http://27.116.52.24:8081/getUserData');
 
                 if (!response.ok) throw new Error('Network response was not ok');
                 data = await response.json();
+                // data = data.data;
 
-                data = data.data;
                 const keys = Object.keys(data);
 
                 // Proceed with placing the cell
