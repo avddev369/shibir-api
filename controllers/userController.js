@@ -70,35 +70,56 @@ exports.login = async (req, res) => {
 
 exports.insertPositionData = async (req, res) => {
     // if (params.verifyParam(req, res) === true) {
-        try {
-          
-            const existingPosition = await db.yuvakPostions.findOne({
-                where: { deviceId: req.body['deviceId'] }
+    try {
+
+        const existingPosition = await db.yuvakPostions.findOne({
+            where: { deviceId: req.body['deviceId'] }
+        });
+
+        if (existingPosition) {
+
+            await existingPosition.update({
+                top: req.body['top'],
+                bottom: req.body['bottom'],
+                left: req.body['left'],
+                right: req.body['right'],
             });
 
-            if (existingPosition) {
-
-                await existingPosition.update({
-                    top: req.body['top'],
-                    bottom: req.body['bottom'],
-                    left: req.body['left'],
-                    right: req.body['right'],
-                });
-
-                myRes.successResponse(res, existingPosition);
-            } else {
-                const newPosition = await db.yuvakPostions.create({
-                    deviceId: req.body['deviceId'],
-                    top: req.body['top'],
-                    bottom: req.body['bottom'],
-                    left: req.body['left'],
-                    right: req.body['right'],
-                });
-                myRes.successResponse(res, newPosition);
-            }
-        } catch (error) {
-            console.log(error);
-            myRes.errorResponse(res, error.message);
+            myRes.successResponse(res, existingPosition);
+        } else {
+            const newPosition = await db.yuvakPostions.create({
+                deviceId: req.body['deviceId'],
+                top: req.body['top'],
+                bottom: req.body['bottom'],
+                left: req.body['left'],
+                right: req.body['right'],
+            });
+            myRes.successResponse(res, newPosition);
         }
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
     // }
+};
+
+exports.getUserData = async (req, res) => {
+    try {
+        const positions = await db.yuvakPostions.findAll();
+
+        const formattedData = positions.reduce((acc, position) => {
+            acc[position.userId] = {
+                top: position.top,
+                right: position.right,
+                bottom: position.bottom,
+                left: position.left
+            };
+            return acc;
+        }, {});
+
+        res.json(formattedData);
+    } catch (error) {
+        console.error('Error fetching positions:', error);
+        res.status(500).json({ error: 'An error occurred while fetching positions.' });
+    }
 };
