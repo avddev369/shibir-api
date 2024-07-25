@@ -38,12 +38,12 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (message) => {
         const data = JSON.parse(message);
         console.log(data);
-        if (data.type === 'colorUpdate' || data.type === 'imageData') {
+        // if (data.type === 'colorUpdate' || data.type === 'imageData' || data.type === 'flash') {
             // Broadcast message to all connected users
             Object.values(connectedUsers).forEach(user => {
                 user.ws.send(JSON.stringify(data));
             });
-        }
+        // }
     });
 
     ws.on('close', () => {

@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const serverless = require('serverless-http');
 const bodyParser = require('body-parser');
-const cors = require('cors'); 
+const cors = require('cors');
 const fs = require('fs');
 const path = './yuvak.json';
 const pathqr = './yuvakQr.json';
@@ -22,7 +22,7 @@ const db = require("./models");
 //   .catch((err) => {
 //     console.error("Failed to sync db: " + err.message);
 //   });
-console.log("Synced db.");  
+console.log("Synced db.");
 
 //Routes
 require("./routes/user.routes")(app);
@@ -43,7 +43,7 @@ app.post("/", (req, res) => {
 
 const PORT = process.env.SERVER_LOCAL_PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server listening on port http://localhost:${PORT}`);
+    console.log(`Server listening on port http://27.116.52.24:${PORT}`);
 });
 
 function appendStudentData(newData) {
@@ -152,13 +152,33 @@ app.get("/getDataQr", (req, res) => {
     });
 });
 
+function clearFile(filePath) {
+    fs.writeFile(filePath, JSON.stringify({}, null, 2), 'utf8', err => {
+        if (err) {
+            console.error('Error clearing the file:', err);
+        } else {
+            console.log('File cleared successfully!');
+        }
+    });
+}
+
+app.post("/clearFile", (req, res) => {
+    const { filePath } = req.body;
+
+    if (!filePath) {
+        return res.status(400).send({ msg: "No file path provided", statusCode: 400 });
+    }
+    console.log(filePath)
+    clearFile(filePath);
+    res.status(200).send({ msg: "File cleared successfully", statusCode: 200 });
+});
 
 process.on('unhandledRejection', err => {
     console.log(`[unhandledRejection] Shutting down server...`);
     console.log(err);
     server.close(() => {
-      process.exit(1);
+        process.exit(1);
     });
-  });
-  
-  module.exports.appServer = serverless(app);
+});
+
+module.exports.appServer = serverless(app);
