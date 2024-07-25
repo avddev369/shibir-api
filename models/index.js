@@ -27,6 +27,7 @@ db.sequelize = sequelize;
 
 // Import all models here
 db.user = require("./user.js")(sequelize, Sequelize);
+db.yuvakPostions = require("./yuvakPositions.js")(sequelize, Sequelize);
 db.session = require("./session.js")(sequelize, Sequelize);
 db.question = require("./question.js")(sequelize, Sequelize);
 db.option = require("./option.js")(sequelize, Sequelize);

@@ -67,3 +67,38 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+exports.insertPositionData = async (req, res) => {
+    // if (params.verifyParam(req, res) === true) {
+        try {
+          
+            const existingPosition = await db.yuvakPostions.findOne({
+                where: { deviceId: req.body['deviceId'] }
+            });
+
+            if (existingPosition) {
+
+                await existingPosition.update({
+                    top: req.body['top'],
+                    bottom: req.body['bottom'],
+                    left: req.body['left'],
+                    right: req.body['right'],
+                });
+
+                myRes.successResponse(res, existingPosition);
+            } else {
+                const newPosition = await db.yuvakPostions.create({
+                    deviceId: req.body['deviceId'],
+                    top: req.body['top'],
+                    bottom: req.body['bottom'],
+                    left: req.body['left'],
+                    right: req.body['right'],
+                });
+                myRes.successResponse(res, newPosition);
+            }
+        } catch (error) {
+            console.log(error);
+            myRes.errorResponse(res, error.message);
+        }
+    // }
+};
