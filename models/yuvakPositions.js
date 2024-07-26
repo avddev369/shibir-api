@@ -25,11 +25,13 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false
         },
+        pos:{
+            type: Sequelize.STRING,
+            allowNull: false
+        }
       
     });
 
     
     return user;
 };
-
-
