@@ -1,37 +1,37 @@
 module.exports = (sequelize, Sequelize) => {
-    const user = sequelize.define('yuvak_position', {
+    const user = sequelize.define('user_master', {
         userId: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true
         },
-        deviceId: {
+        name: {
             type: Sequelize.STRING,
             allowNull: false
         },
-        top: {
+        mobile: {
             type: Sequelize.STRING,
             allowNull: false
         },
-        bottom: {
-            type: Sequelize.STRING,
-            allowNull: false
+        img: {
+          type: Sequelize.STRING(50)
         },
-        left: {
-            type: Sequelize.STRING,
-            allowNull: false
+        isMaster: {
+            type: Sequelize.BOOLEAN,
+            allowNull: false,
+            default: false
         },
-        right: {
-            type: Sequelize.STRING,
-            allowNull: false
-        },
-        pos:{
-            type: Sequelize.STRING,
-            allowNull: false
-        }
-      
     });
 
+    user.associate = (models) => {
+        user.hasMany(models.answer, {
+            foreignKey: 'userId',
+            sourceKey: 'userId',
+            as: 'user',
+        });
+    };
     
     return user;
 };
+
+
