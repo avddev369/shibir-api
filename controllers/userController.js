@@ -83,6 +83,7 @@ exports.insertPositionData = async (req, res) => {
                 bottom: req.body['bottom'],
                 left: req.body['left'],
                 right: req.body['right'],
+                pos: req.body['pos'],
             });
 
             myRes.successResponse(res, existingPosition);
@@ -93,6 +94,7 @@ exports.insertPositionData = async (req, res) => {
                 bottom: req.body['bottom'],
                 left: req.body['left'],
                 right: req.body['right'],
+                pos: req.body['pos'],
             });
             myRes.successResponse(res, newPosition);
         }
@@ -101,6 +103,53 @@ exports.insertPositionData = async (req, res) => {
         myRes.errorResponse(res, error.message);
     }
     // }
+};
+
+exports.updateUserPositions = async (req, res) => {
+    try {
+        if (typeof req.body !== 'object') {
+            return myRes.errorResponse(res, 'Invalid request body');
+        }
+
+        const positionUpdates = req.body;
+        const userIds = Object.keys(positionUpdates);
+
+        for (const userId of userIds) {
+            const pos = positionUpdates[userId];
+            const existingPosition = await db.yuvakPostions.findOne({
+                where: { userId: userId }
+            });
+
+            await existingPosition.update({
+                pos: pos
+            });
+        }
+
+        myRes.successResponse(res, { message: 'Positions updated successfully' });
+
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
+};
+
+exports.getPositionWiseData = async (req, res) => {
+    try {
+        const positionData = await db.yuvakPostions.findAll({
+            attributes: ['userId', 'pos'], 
+            order: [['pos', 'ASC']] 
+        });
+
+        const formattedData = positionData.reduce((acc, position) => {
+            acc[position.pos] = position.userId || 0;
+            return acc;
+        }, {});
+
+        res.json(formattedData);
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
 };
 
 exports.getUserData = async (req, res) => {

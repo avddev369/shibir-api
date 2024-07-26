@@ -5,8 +5,9 @@ module.exports = app => {
 
     router.post("/login", user.login);
     router.post("/insertPositionData", user.insertPositionData)
+    router.post("/updateUserPositions", user.updateUserPositions)
     router.get("/getUserData", user.getUserData)
+    router.get("/getPositionWiseData", user.getPositionWiseData)
     
     app.use("/", router);
 };
-      
