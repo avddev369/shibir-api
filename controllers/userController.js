@@ -136,12 +136,31 @@ exports.updateUserPositions = async (req, res) => {
 exports.getPositionWiseData = async (req, res) => {
     try {
         const positionData = await db.yuvakPostions.findAll({
-            attributes: ['userId', 'pos'], 
-            order: [['pos', 'ASC']] 
+            attributes: ['userId', 'pos'],
+            order: [['pos', 'ASC']]
         });
 
         const formattedData = positionData.reduce((acc, position) => {
             acc[position.pos] = position.userId || 0;
+            return acc;
+        }, {});
+
+        res.json(formattedData);
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
+};
+
+exports.getPositionWiseDataApp = async (req, res) => {
+    try {
+        const positionData = await db.yuvakPostions.findAll({
+            attributes: ['userId', 'pos'],
+            order: [['pos', 'ASC']]
+        });
+
+        const formattedData = positionData.reduce((acc, position) => {
+            acc[position.userId] = position.pos || 0;
             return acc;
         }, {});
 
@@ -172,3 +191,28 @@ exports.getUserData = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while fetching positions.' });
     }
 };
+
+
+exports.getPattern = async (req, res) => {
+    const { pattern } = req.body;
+    // console.log(`Start: ${start}, End: ${end}, Delay: ${delay}, Data: ${data}`);
+    var responseObject = {};
+    if (pattern == 1) {
+        responseObject = {
+            "start": "03:58",
+            "end": "03:59",
+            "delay": 5,
+            "data": [
+                "0010001100001000010011111",
+                "1111000010111101000011111",
+                "1111000010111100001011110",
+                "1001010010111110001000010",
+                "1111110000111100001011110"
+            ]
+        };
+    }
+
+    res.json(responseObject);
+};
+
+
