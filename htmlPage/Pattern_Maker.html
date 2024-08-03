@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Pattern</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(30, 10px);
+            grid-template-rows: repeat(15, 10px);
+            gap: 0px;
+            margin-bottom: 2px;
+        }
+        .cell {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            position: relative;
+        }
+        .cell.filled {
+            background-color: red;
+        }
+        .number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4px;
+            color: black;
+        }
+        button {
+            padding: 2px 5px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="grid"></div>
+    <button id="new">New</button>
+    <button id="previous">Previous</button>
+    <button id="next">Next</button>
+    <button id="update">Update</button>
+    <button id="submit">Submit</button>
+    <button id="export">Export</button>
+    <script>
+        const rows = 15;
+        const cols = 30;
+        const grid = document.getElementById('grid');
+        let currentPatternIndex = -1; // No pattern loaded initially
+
+        let cells = [];
+
+        function createGrid(pattern = null) {
+            grid.innerHTML = ''; // Clear the grid
+            cells = [];
+            for (let i = 0; i < rows * cols; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => {
+                    cell.classList.toggle('filled');
+                    // autoSave();
+                });
+                const number = document.createElement('span');
+                number.textContent = i + 1;
+                number.classList.add('number');
+                cell.appendChild(number);
+
+                grid.appendChild(cell);
+                cells.push(cell);
+            }
+
+            if (pattern) {
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        const cell = cells[i * cols + j];
+                        cell.classList.toggle('filled', pattern[i * cols + j] === '1');
+                    }
+                }
+            }
+        }
+
+        function autoSave() {
+            if (currentPatternIndex !== -1) {
+                const pattern = [];
+                for (let i = 0; i < rows; i++) {
+                    let rowPattern = '';
+                    for (let j = 0; j < cols; j++) {
+                        const cell = cells[i * cols + j];
+                        rowPattern += cell.classList.contains('filled') ? '1' : '0';
+                    }
+                    pattern.push(rowPattern);
+                }
+                const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+                existingPatterns[currentPatternIndex] = pattern.join('');
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+            }
+        }
+
+        document.getElementById('submit').addEventListener('click', () => {
+            const pattern = [];
+            for (let i = 0; i < rows; i++) {
+                let rowPattern = '';
+                for (let j = 0; j < cols; j++) {
+                    const cell = cells[i * cols + j];
+                    rowPattern += cell.classList.contains('filled') ? '1' : '0';
+                }
+                pattern.push(rowPattern);
+            }
+
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            existingPatterns.push(pattern.join(''));
+            currentPatternIndex = existingPatterns.length - 1; // Set to the new pattern index
+
+            localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+            console.log('Updated patterns:', JSON.stringify(existingPatterns));
+        });
+
+        document.getElementById('export').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            const blob = new Blob([JSON.stringify(existingPatterns)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'patterns.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        document.getElementById('previous').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (currentPatternIndex > 0) {
+                currentPatternIndex--;
+                loadPattern(currentPatternIndex);
+            }
+        });
+
+        document.getElementById('next').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (currentPatternIndex < existingPatterns.length - 1) {
+                currentPatternIndex++;
+                loadPattern(currentPatternIndex);
+            }
+        });
+
+        document.getElementById('update').addEventListener('click', () => {
+            autoSave();
+        });
+
+        // document.getElementById('new').addEventListener('click', () => {
+        //     const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+        //     if (existingPatterns.length > 0) {
+        //         currentPatternIndex = existingPatterns.length - 1;
+        //         loadPattern(currentPatternIndex);
+        //     } else {
+        //         createGrid(); // No patterns, create an empty grid
+        //     }
+        // });
+
+        function loadPattern(index) {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (index >= 0 && index < existingPatterns.length) {
+                const pattern = existingPatterns[index];
+                createGrid(pattern);
+            }
+        }
+
+        createGrid(); // Initialize the grid on page load
+    </script>
+</body>
+</html>
