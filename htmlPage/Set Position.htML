@@ -298,7 +298,12 @@
                         if (cellIndex < cells.length) {
                             const cellDiv = cells[cellIndex];
                             const cellKey = `${row}-${col}`; 
-                            positionData[cellDiv.textContent] = seqNumber++; 
+                            if(cellDiv.textContent!=""){
+                                positionData[cellDiv.textContent] = seqNumber++; 
+                            }
+                            else{
+                                seqNumber++;
+                            }
                         }
                     }
                 }
