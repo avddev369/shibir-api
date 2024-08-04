@@ -209,3 +209,18 @@ exports.getPattern = async (req, res) => {
 };
 
 
+exports.truncateDb = async (req, res) => {
+    try {
+        // Truncate the table
+        await db.yuvakPostions.destroy({
+            where: {},
+            truncate: true,
+            restartIdentity: true  
+        });
+
+        res.json({ message: 'Table truncated and primary key reset successfully.' });
+    } catch (error) {
+        console.error('Error truncating table:', error);
+        res.status(500).json({ error: 'Failed to truncate table.' });
+    }
+};

@@ -1,0 +1,17 @@
+wscat -c ws://27.116.52.24:8080
+
+//Set Postion
+{"type":"setPosition"}
+
+{"type":"pattern","patternName":"patterns1","start":"15:15","delay":1000}
+
+p1.json // We are one
+{"type":"pattern","patternName":"p1","start":"15:15","delay":1000}
+
+
+p2.json // Bas ek tu raji tha
+{"type":"pattern","patternName":"p2","start":"15:15","delay":1000}
+
+
+tp.json // test pattern
+{"type":"pattern","patternName":"tp","start":"15:15","delay":1000}

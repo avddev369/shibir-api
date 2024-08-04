@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4Qr Matrix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #matrixContainer {
+            display: grid;
+            gap: 1px;
+            border: 1px solid #000;
+            grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+            grid-auto-rows: 30px;
+            width: fit-content;
+            margin: auto;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            background-color: #00000081;
+            /* Default color for empty cells */
+            font-size: 14px;
+            color: #000;
+            /* Default text color */
+        }
+
+        .cell.clicked {
+            background-color: var(--cell-color);
+            /* Color for clicked cells */
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <label for="colorPicker">Select Cell Color:</label>
+        <input type="color" id="colorPicker" value="#ff0000"  disabled>
+        <button id="cleanMatrixButton" onclick="cleanMatrix()" disabled>Clean Matrix</button>
+        <!-- <button id="printButton" onclick="printMatrix()" disabled>Print Matrix</button>
+        <button id="sendButton" onclick="sendColorsToClients()" disabled>Send</button> -->
+        <button id="setPositionButton" onclick="setPosition()" disabled>Set Position</button> 
+    </div>
+    <div id="matrixContainer"></div>
+    <!-- <div>
+        <h3>Connected Users</h3>
+        <ul id="connectedUsers"></ul>
+    </div> -->
+
+    <script>
+        let data = {};
+        let matrix = Array.from({ length: 100 }, () => Array(100).fill("#"));
+        const placed = new Set();
+        let fillColor = "#ff0000"; // Default picked color
+        let isMouseDown = false; // Track mouse down state
+        positionData = {};
+
+        let ws;
+        let userId;
+
+        const isWithinBounds = (row, col) => row >= 0 && row < matrix.length && col >= 0 && col < matrix[0].length;
+
+        const placeCell = (key, row, col) => {
+            if (!isWithinBounds(row, col) || matrix[row][col] !== "#") return;
+
+            const neighborData = data[key];
+            if (!neighborData) return;
+
+            matrix[row][col] = key;
+            placed.add(key);
+
+            const { top, right, bottom, left } = neighborData;
+
+            // Try to place cells in all directions
+            if (top !== "#" && !placed.has(top)) placeCell(top, row - 1, col);
+            if (right !== "#" && !placed.has(right)) placeCell(right, row, col + 1);
+            if (bottom !== "#" && !placed.has(bottom)) placeCell(bottom, row + 1, col);
+            if (left !== "#" && !placed.has(left)) placeCell(left, row, col - 1);
+
+            // If top and left are missing, but right and bottom are present
+            if (top === "#" && left === "#") {
+                if (right !== "#" && !placed.has(right)) placeCell(right, row, col + 1);
+                if (bottom !== "#" && !placed.has(bottom)) placeCell(bottom, row + 1, col);
+            }
+        };
+
+        const renderMatrix = () => {
+            const container = document.getElementById('matrixContainer');
+            container.innerHTML = "";
+            matrix.forEach((row, rIndex) => {
+                row.forEach((cell, cIndex) => {
+                    const div = document.createElement('div');
+                    div.classList.add('cell');
+                    div.textContent = cell !== "#" ? cell : "";
+                    const bgColor = cell !== "#" ? getComputedStyle(document.documentElement).getPropertyValue('--cell-color') : '#fff';
+                    div.style.backgroundColor = bgColor;
+                    div.style.color = isDark(bgColor) ? '#fff' : '#000'; // Set text color based on background color
+                    container.appendChild(div);
+
+                    div.addEventListener('mousedown', () => {
+                        isMouseDown = true;
+                        fillCell(div);
+                    });
+
+                    div.addEventListener('mouseover', () => {
+                        if (isMouseDown) {
+                            fillCell(div);
+                        }
+                    });
+
+                    div.addEventListener('mouseup', () => {
+                        isMouseDown = false;
+                    });
+                });
+            });
+            container.style.gridTemplateColumns = `repeat(${matrix[0].length}, 30px)`;
+        };
+
+        const fillCell = (cellDiv) => {
+            cellDiv.style.backgroundColor = fillColor;
+            cellDiv.style.color = isDark(fillColor) ? '#fff' : '#000';
+            cellDiv.classList.add('clicked');
+        };
+
+        const isDark = (color) => {
+            const rgb = parseInt(color.slice(1), 16); // Convert hex to decimal
+            const r = (rgb >> 16) & 0xff;
+            const g = (rgb >> 8) & 0xff;
+            const b = (rgb >> 0) & 0xff;
+            // Calculate luminance using the formula for brightness
+            return (r * 0.299 + g * 0.587 + b * 0.114) < 186;
+        };
+
+        const cleanMatrix = () => {
+            document.querySelectorAll('.cell.clicked').forEach(cell => {
+                cell.style.backgroundColor = '#fff';
+                cell.style.color = '#000';
+                cell.classList.remove('clicked');
+            });
+
+            // Remove empty rows
+            matrix = matrix.filter(row => row.some(cell => cell !== "#"));
+
+            // Remove empty columns
+            if (matrix.length > 0) {
+                const numColumns = Math.max(...matrix.map(row => row.lastIndexOf("#") + 1));
+                matrix = matrix.map(row => row.slice(0, numColumns).filter((_, colIndex) => matrix.some(r => r[colIndex] !== "#")));
+            }
+
+            // Re-render the matrix
+            renderMatrix();
+        };
+
+        const printMatrix = () => {
+            console.clear(); // Clear the console before printing
+            console.log('Matrix Data:');
+
+            const container = document.getElementById('matrixContainer');
+            const cells = container.querySelectorAll('.cell');
+
+            matrix.forEach((row, rIndex) => {
+                let rowData = row.map((_, cIndex) => {
+                    const cellDiv = cells[rIndex * matrix[0].length + cIndex];
+                    const bgColor = cellDiv ? getComputedStyle(cellDiv).backgroundColor : '#fff';
+                    const value = cellDiv ? cellDiv.textContent.trim() : '';
+                    return `Cell(${rIndex}, ${cIndex}): Value=${value}, Background Color=${bgColor}`;
+                }).join(' | ');
+                console.log(rowData);
+            });
+        };
+
+        const updateConnectedUsers = (users) => {
+            const list = document.getElementById('connectedUsers');
+            list.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = `User ID: ${user}`;
+                list.appendChild(li);
+            });
+        };
+
+        const sendColorsToClients = () => {
+            const colorsData = {};
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                const bgColor = rgbToHex(getComputedStyle(cell).backgroundColor);
+                const clientId = cell.textContent.trim();
+                if (clientId) {
+
+                    colorsData[clientId] = bgColor;
+
+                }
+            });
+            console.log(colorsData);
+            ws.send(JSON.stringify({ type: 'colorUpdate', defaultColor: "ffffff", colors: colorsData }));
+        };
+
+        const rgbToHex = (rgb) => {
+            const rgbValues = rgb.match(/\d+/g);
+            const hex = rgbValues.map((val) => parseInt(val).toString(16).padStart(2, '0')).join('');
+            return `${hex}`;
+        };
+
+        const setupWebSocket = () => {
+            ws = new WebSocket('ws://27.116.52.24:8080');
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.userId !== undefined) {
+                    userId = message.userId;
+                    document.getElementById('colorPicker').disabled = false;
+                    document.getElementById('cleanMatrixButton').disabled = false;
+                    // document.getElementById('printButton').disabled = false;
+                    // document.getElementById('sendButton').disabled = false;
+                } else if (message.connectedUsers !== undefined) {
+                    updateConnectedUsers(message.connectedUsers);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        };
+
+        document.getElementById('colorPicker').addEventListener('input', (event) => {
+            fillColor = event.target.value;
+        });
+        const getMidpoint = (rows, cols) => ({
+            x: Math.floor(rows / 2),
+            y: Math.floor(cols / 2)
+        });
+
+        const loadData = async () => {
+            try {
+                const response = await fetch('http://27.116.52.24:8081/getUserData');
+
+                if (!response.ok) throw new Error('Network response was not ok');
+                data = await response.json();
+                // data = data.data;
+
+                const keys = Object.keys(data);
+
+                // Proceed with placing the cell
+                const { x, y } = getMidpoint(matrix.length, matrix[0].length);
+
+                // Start placing the first cell from the midpoint
+                if (keys.length > 0) {
+                    placeCell(keys[0], x, y);
+                }
+                renderMatrix();
+
+                // Enable buttons after data is loaded
+                document.getElementById('colorPicker').disabled = false;
+                document.getElementById('cleanMatrixButton').disabled = false;
+                // document.getElementById('printButton').disabled = false;
+                document.getElementById('setPositionButton').disabled = false;
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        };
+
+        const setPosition = async () => {
+            try {
+            
+                const container = document.getElementById('matrixContainer');
+                const cells = container.querySelectorAll('.cell');
+
+                // Determine the number of rows and columns based on the grid layout
+                const rows = Math.round(cells.length / (container.style.gridTemplateColumns.split(' ').length || 1));
+                const cols = container.style.gridTemplateColumns.split(' ').length || 1;
+
+                const positionData = {};
+
+                // Generate sequential numbers and populate positionData
+                let seqNumber = 1;
+                for (let row = 1; row <= rows; row++) {
+                    for (let col = 1; col <= cols; col++) {
+                        const cellIndex = (row - 1) * cols + (col - 1);
+                        if (cellIndex < cells.length) {
+                            const cellDiv = cells[cellIndex];
+                            const cellKey = `${row}-${col}`;
+                            if(cellDiv.textContent != ""){
+                                positionData[cellDiv.textContent] = seqNumber++;
+                            } 
+                            else{
+                                seqNumber++;
+                            } 
+                        }
+                    }
+                }
+
+                console.log(positionData);
+                const response = await fetch('http://27.116.52.24:8081/updateUserPositions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(positionData)
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+                const result = await response.json();
+                console.log('Position data updated:', result);
+                ws.send(JSON.stringify({ type: 'setPosition'}));
+            } catch (error) {
+                console.error('Failed to update position data:', error);
+            }
+        };
+        window.onload = () => {
+            loadData();
+            setupWebSocket();
+        };
+    </script>
+</body>
+
+</html>

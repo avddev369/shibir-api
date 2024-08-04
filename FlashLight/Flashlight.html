@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Marquee</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #admin-controls {
+            margin-bottom: 20px;
+        }
+
+        #matrix {
+            display: grid;
+            grid-gap: 7px;
+        }
+
+        .cell {
+            width: 20px;
+            height: 20px;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .cell.on {
+            background-color: red;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .marquee-direction button {
+            margin: 5px;
+        }
+
+        .cell-number {
+            font-size: 12px;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="admin-controls">
+        <div class="control-group">
+            <label for="rows">Rows:</label>
+            <input type="number" id="rows" value="10">
+            <label for="columns">Columns:</label>
+            <input type="number" id="columns" value="20">
+            <button id="update-matrix">Update Matrix</button>
+        </div>
+
+        <div class="control-group">
+            <label for="delay">Delay (ms):</label>
+            <input type="number" id="delay" value="500">
+            <select id="options">
+                <option value="blink">Blink LED</option>
+                <option value="wave">Blink in Waves</option>
+                <option value="pattern">Blink in Pattern</option>
+            </select>
+            <input type="text" id="pattern-input" placeholder="Enter pattern (e.g., 1010)">
+            <button id="apply-option">Apply Option</button>
+        </div>
+
+        <div class="control-group">
+            <label for="pattern-select">Predefined Patterns:</label>
+            <select id="pattern-select">
+                <option value="row">Row-wise On/Off</option>
+                <option value="column">Column-wise On/Off</option>
+                <option value="zigzag">Zigzag Pattern</option>
+
+            </select>
+            <button id="apply-pattern">Apply Pattern</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Marquee Effect:</h3>
+            <input type="text" id="sentence-input" placeholder="Enter sentence">
+            <label for="gap">Column Gap:</label>
+            <input type="number" id="gap" value="2">
+            <button id="apply-marquee">Apply Marquee Effect</button>
+        </div>
+
+        <div class="marquee-direction">
+            <button id="marquee-left">Left</button>
+            <button id="marquee-right">Right</button>
+            <button id="marquee-up">Up</button>
+            <button id="marquee-down">Down</button>
+        </div>
+        Matrix Cell := User Id
+    </div>
+
+    <div id="matrix"></div>
+
+    <script>
+        var positionData = {};
+        document.addEventListener('DOMContentLoaded', () => {
+            const matrixContainer = document.getElementById('matrix');
+            const rowsInput = document.getElementById('rows');
+            const columnsInput = document.getElementById('columns');
+            const updateMatrixButton = document.getElementById('update-matrix');
+            const delayInput = document.getElementById('delay');
+            const optionsSelect = document.getElementById('options');
+            const patternInput = document.getElementById('pattern-input');
+            const applyOptionButton = document.getElementById('apply-option');
+            const patternSelect = document.getElementById('pattern-select');
+            const applyPatternButton = document.getElementById('apply-pattern');
+            const sentenceInput = document.getElementById('sentence-input');
+            const gapInput = document.getElementById('gap');
+            const applyMarqueeButton = document.getElementById('apply-marquee');
+            const marqueeLeftButton = document.getElementById('marquee-left');
+            const marqueeRightButton = document.getElementById('marquee-right');
+            const marqueeUpButton = document.getElementById('marquee-up');
+            const marqueeDownButton = document.getElementById('marquee-down');
+
+            let matrix = [];
+            let marqueeInterval;
+            let currentMarqueeDirection = '';
+            let interval;
+            var data = {"type":"flash"};
+
+            const charPatterns = {
+                'A': ['01110', '10001', '11111', '10001', '10001'],
+                'B': ['11110', '10001', '11110', '10001', '11110'],
+                'C': ['01110', '10000', '10000', '10000', '01110'],
+                // Add other characters as needed
+            };
+
+            const ws = new WebSocket('ws://27.116.52.24:8080');
+
+            ws.onopen = () => {
+                console.log('Connected to WebSocket server');
+            };
+
+            ws.onmessage = (event) => {
+                console.log(event);
+                // Optional: handle messages from the server if needed
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from WebSocket server');
+            };
+
+
+
+            function createMatrix(rows, columns) {
+                matrixContainer.innerHTML = '';
+                matrixContainer.style.gridTemplateRows = `repeat(${rows}, 20px)`;
+                matrixContainer.style.gridTemplateColumns = `repeat(${columns}, 20px)`;
+
+                matrix = [];
+
+                let cellNumber = 1;
+
+                for (let r = 0; r < rows; r++) {
+                    const row = [];
+                    for (let c = 0; c < columns; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        const number = document.createElement('div');
+                        number.className = 'cell-number';
+                        
+                        number.textContent = positionData[cellNumber++];
+                        cell.appendChild(number);
+                        matrixContainer.appendChild(cell);
+                        row.push(cell);
+                        data[number.textContent] = false;
+                    }
+                    matrix.push(row);
+                }
+
+                const message = JSON.stringify(data);
+                ws.send(message);
+            }
+
+            function clearMatrix() {
+                matrix.forEach(row => row.forEach(cell => cell.classList.remove('on')));
+            }
+
+            function applyPattern(patternName, delay) {
+                if (interval) clearInterval(interval);
+                const rows = matrix.length;
+                const columns = matrix[0].length;
+
+                switch (patternName) {
+                    case 'row':
+                        let rowIndex = 0;
+                        interval = setInterval(() => {
+                            matrix.forEach((row, r) => {
+                                row.forEach(cell => cell.classList.remove('on'));
+                                if (r === rowIndex) row.forEach(cell => cell.classList.add('on'));
+                                  });
+                            rowIndex = (rowIndex + 1) % rows;
+
+                            updateCellStates(); 
+                        }, delay);
+
+                        break;
+
+                    case 'column':
+                        let colIndex = 0;
+                        interval = setInterval(() => {
+                            matrix.forEach(row => row.forEach(cell => cell.classList.remove('on')));
+                            matrix.forEach(row => row[colIndex].classList.add('on'));
+                            colIndex = (colIndex + 1) % columns;
+                            updateCellStates(); 
+                        }, delay);
+                        break;
+
+                    case 'zigzag':
+                        let zigzagIndex = 0;
+                        interval = setInterval(() => {
+                            matrix.forEach(row => row.forEach(cell => cell.classList.remove('on')));
+                            matrix.forEach((row, rIndex) => row.forEach((cell, cIndex) => {
+                                if ((rIndex + cIndex) % 2 === zigzagIndex) cell.classList.add('on');
+                            }));
+                            zigzagIndex = (zigzagIndex + 1) % 2;
+                            updateCellStates(); 
+                        }, delay);
+                        break;
+
+                    case 'diagonal':
+                        let diagIndex = 0;
+                        interval = setInterval(() => {
+                            matrix.forEach(row => row.forEach(cell => cell.classList.remove('on')));
+                            matrix.forEach((row, rIndex) => row.forEach((cell, cIndex) => {
+                                if (rIndex === cIndex || rIndex + cIndex === rows - 1) cell.classList.add('on');
+                            }));
+                            diagIndex = (diagIndex + 1) % 2;
+                            updateCellStates(); 
+                        }, delay);
+                        break;
+                }
+            }
+
+
+            function updateCellStates() {
+                const cellStates = {"type":"flash"};
+                matrix.forEach(row => row.forEach(cell => {
+                    const cellNumber = cell.querySelector('.cell-number').textContent;
+                    cellStates[cellNumber] = cell.classList.contains('on');
+                }));
+                const message = JSON.stringify(cellStates);
+                ws.send(message);
+            }
+
+            function blinkLEDTimed(delay) {
+                clearInterval(marqueeInterval);
+                marqueeInterval = setInterval(() => {
+                    matrix.forEach(row => row.forEach(cell => cell.classList.toggle('on')));
+                    updateCellStates(); 
+                }, delay);
+            }
+
+            // function blinkLEDTimed(delay) {
+            //     clearInterval(marqueeInterval);
+            //     marqueeInterval = setInterval(() => {
+            //         matrix.forEach(row => row.forEach(cell => cell.classList.toggle('on')));
+            //         const message = JSON.stringify(data );
+            //                 ws.send(message);
+            //     }, delay);
+            // }
+
+            function blinkInPattern(pattern, delay) {
+                clearInterval(marqueeInterval);
+                const patternLength = pattern.length;
+                let index = 0;
+
+                marqueeInterval = setInterval(() => {
+                    clearMatrix();
+
+                    for (let i = 0; i < patternLength; i++) {
+                        if (pattern[i] === '1') {
+                            const row = Math.floor(i / matrix[0].length);
+                            const col = i % matrix[0].length;
+                            if (matrix[row]) matrix[row][col]?.classList.add('on');
+                        }
+                    }
+
+                    index = (index + 1) % patternLength;
+                    updateCellStates(); 
+                }, delay);
+            }
+
+            function blinkInWave(delay) {
+                clearInterval(marqueeInterval);
+                let waveOffset = 0;
+                const totalRows = matrix.length;
+                const totalColumns = matrix[0].length;
+
+                marqueeInterval = setInterval(() => {
+                    clearMatrix();
+
+                    for (let r = 0; r < totalRows; r++) {
+                        for (let c = 0; c < totalColumns; c++) {
+                            const wavePosition = (c + waveOffset) % totalColumns;
+                            if (r % 2 === 0 && wavePosition < totalColumns / 2) {
+                                matrix[r][c].classList.add('on');
+                            } else if (r % 2 === 1 && wavePosition >= totalColumns / 2) {
+                                matrix[r][c].classList.add('on');
+                            }
+                        }
+                    }
+
+                    waveOffset = (waveOffset + 1) % totalColumns;
+                    updateCellStates(); 
+                }, delay);
+            }
+
+            function applyMarqueeEffect(sentence, gap, delay, direction) {
+                clearInterval(marqueeInterval);
+                const rows = matrix.length;
+                const columns = matrix[0].length;
+                const sentenceChars = sentence.toUpperCase().split('');
+                const charWidth = Math.max(...sentenceChars.map(char => (charPatterns[char] || [])[0]?.length || 0));
+                const charHeight = Math.max(...sentenceChars.map(char => (charPatterns[char] || []).length || 0));
+                const totalLength = sentenceChars.reduce((sum, char) => {
+                    return sum + (charPatterns[char]?.[0]?.length || 0) + gap;
+                }, 0);
+
+                let offset = direction === 'left' ? columns : direction === 'right' ? -totalLength : direction === 'up' ? rows : -totalLength;
+
+                marqueeInterval = setInterval(() => {
+                    clearMatrix();
+
+                    if (direction === 'left' || direction === 'right') {
+                        let colIndex = offset;
+                        sentenceChars.forEach(char => {
+                            const charPattern = charPatterns[char] || [];
+                            const patternWidth = charPattern[0]?.length || 0;
+                            const startCharCol = colIndex;
+                            const endCharCol = startCharCol + patternWidth;
+
+                            charPattern.forEach((rowPattern, r) => {
+                                rowPattern.split('').forEach((value, c) => {
+                                    if (value === '1') {
+                                        const cell = matrix[r] && matrix[r][(startCharCol + c) % columns];
+                                        if (cell) cell.classList.add('on');
+                                    }
+                                });
+                            });
+
+                            colIndex += patternWidth + gap;
+                        });
+
+                        offset = direction === 'left' ? (offset - 1) : (direction === 'right' ? (offset + 1) : offset);
+                        if (direction === 'left' && offset < -totalLength) offset = columns;
+                        if (direction === 'right' && offset >= columns) offset = -totalLength;
+                    } else if (direction === 'up' || direction === 'down') {
+                        let rowIndex = offset;
+                        sentenceChars.forEach(char => {
+                            const charPattern = charPatterns[char] || [];
+                            const patternHeight = charPattern.length || 0;
+                            const startCharRow = rowIndex;
+                            const endCharRow = startCharRow + patternHeight;
+
+                            charPattern.forEach((rowPattern, r) => {
+                                rowPattern.split('').forEach((value, c) => {
+                                    if (value === '1') {
+                                        const cell = matrix[(startCharRow + r) % rows] && matrix[(startCharRow + r) % rows][c];
+                                        if (cell) cell.classList.add('on');
+                                    }
+                                });
+                            });
+
+                            rowIndex += patternHeight + gap;
+                        });
+
+                        offset = direction === 'up' ? (offset - 1) : (direction === 'down' ? (offset + 1) : offset);
+                        if (direction === 'up' && offset < -totalLength) offset = rows;
+                        if (direction === 'down' && offset >= rows) offset = -totalLength;
+                    }
+                }, delay);
+            }
+
+            updateMatrixButton.addEventListener('click', () => {
+                const rows = parseInt(rowsInput.value, 10);
+                const columns = parseInt(columnsInput.value, 10);
+                createMatrix(rows, columns);
+            });
+
+            applyOptionButton.addEventListener('click', () => {
+                const delay = parseInt(delayInput.value, 10);
+                const option = optionsSelect.value;
+                if (option === 'blink') {
+                    blinkLEDTimed(delay);
+                } else if (option === 'wave') {
+                    blinkInWave(delay);
+                } else if (option === 'pattern') {
+                    const pattern = patternInput.value;
+                    blinkInPattern(pattern, delay);
+                }
+            });
+
+            applyPatternButton.addEventListener('click', () => {
+                const patternName = patternSelect.value;
+                const delay = parseInt(delayInput.value, 10);
+                applyPattern(patternName, delay);
+            });
+
+            applyMarqueeButton.addEventListener('click', () => {
+                const sentence = sentenceInput.value;
+                const gap = parseInt(gapInput.value, 10);
+                const delay = parseInt(delayInput.value, 10);
+                applyMarqueeEffect(sentence, gap, delay, currentMarqueeDirection);
+            });
+
+            marqueeLeftButton.addEventListener('click', () => {
+                currentMarqueeDirection = 'left';
+                const sentence = sentenceInput.value;
+                const gap = parseInt(gapInput.value, 10);
+                const delay = parseInt(delayInput.value, 10);
+                applyMarqueeEffect(sentence, gap, delay, currentMarqueeDirection);
+            });
+
+            marqueeRightButton.addEventListener('click', () => {
+                currentMarqueeDirection = 'right';
+                const sentence = sentenceInput.value;
+                const gap = parseInt(gapInput.value, 10);
+                const delay = parseInt(delayInput.value, 10);
+                applyMarqueeEffect(sentence, gap, delay, currentMarqueeDirection);
+            });
+
+            marqueeUpButton.addEventListener('click', () => {
+                currentMarqueeDirection = 'up';
+                const sentence = sentenceInput.value;
+                const gap = parseInt(gapInput.value, 10);
+                const delay = parseInt(delayInput.value, 10);
+                applyMarqueeEffect(sentence, gap, delay, currentMarqueeDirection);
+            });
+
+            marqueeDownButton.addEventListener('click', () => {
+                currentMarqueeDirection = 'down';
+                const sentence = sentenceInput.value;
+                const gap = parseInt(gapInput.value, 10);
+                const delay = parseInt(delayInput.value, 10);
+                applyMarqueeEffect(sentence, gap, delay, currentMarqueeDirection);
+            });
+        });
+
+        const loadData = async () => {
+            try {
+                const response = await fetch('http:/27.116.52.24:8081/getPositionWiseData');
+
+                if (!response.ok) throw new Error('Network response was not ok');
+                positionData = await response.json();
+
+                console.log(positionData)
+                
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        };
+
+        window.onload = () => {
+            loadData();
+        };
+    </script>
+
+</body>
+
+</html>

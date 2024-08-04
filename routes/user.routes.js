@@ -10,6 +10,7 @@ module.exports = app => {
     router.get("/getPositionWiseData", user.getPositionWiseData)
     router.post("/getPattern", user.getPattern)
     router.get("/getPositionWiseDataApp", user.getPositionWiseDataApp)
+    router.post("/truncateDb", user.truncateDb)
     
     app.use("/", router);
 };

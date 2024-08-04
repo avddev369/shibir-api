@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Pattern</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(30, 10px);
+            grid-template-rows: repeat(15, 10px);
+            gap: 0px;
+            margin-bottom: 10px;
+        }
+
+        .cell {
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cell.filled {
+            background-color: red;
+        }
+
+        .number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4px;
+            color: black;
+        }
+
+        button {
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 5px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #searchContainer,
+        #addSlideContainer,
+        #deleteSlideContainer,
+        #undoSlideContainer {
+            margin-bottom: 10px;
+        }
+
+        input[type="number"] {
+            padding: 5px;
+            font-size: 14px;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            button {
+                padding: 8px 12px;
+                font-size: 12px;
+                margin: 3px;
+            }
+
+            input[type="number"] {
+                padding: 4px;
+                font-size: 12px;
+                margin-right: 3px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            button {
+                padding: 10px 15px;
+                font-size: 10px;
+                margin: 2px;
+            }
+
+            input[type="number"] {
+                padding: 3px;
+                font-size: 10px;
+                margin-right: 2px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="searchContainer">
+        <input type="number" id="searchIndex" placeholder="Index" min="1">
+        <button id="search">Search</button>
+    </div>
+
+    <div id="grid"></div>
+
+    <button id="new">New</button>
+    <button id="previous">Previous</button>
+    <button id="next">Next</button>
+    <button id="update">Update</button>
+    <button id="submit">Submit</button>
+    <button id="export">Export</button>
+    <button id="clearAll">Clear All</button>
+    <button id="selectAll">Select All</button>
+    <button id="copy">Copy</button>
+    <button id="paste">Paste</button>
+    <button id="shiftLeft">Shift Left</button>
+    <button id="shiftRight">Shift Right</button>
+    <button id="shiftUp">Shift Up</button>
+    <button id="shiftDown">Shift Down</button>
+    <button id="uploadImage">Upload Image</button>
+    <input type="file" id="imageInput" style="display: none;">
+    <button id="deleteSpecific">Delete Specific Slide</button>
+    <button id="deleteCurrent">Delete Current Slide</button>
+    <button id="uploadJson">Upload JSON</button>
+    <input type="file" id="jsonInput" style="display: none;">
+    <button id="undo">Undo</button>
+
+    <label id="rowNumber">Index: 0</label>
+    <!-- Timer Controls -->
+    <audio id="audio" preload="auto"></audio>
+
+    <div id="audioContainer">
+        <input type="file" id="audioInput" accept="audio/*" style="display: none;">
+        <button id="uploadAudio">Upload Audio</button>
+    </div>
+    <div id="audioTimeContainer">
+        <span id="audioCurrentTime">Current Time: 0:00</span>
+    </div>
+    
+    
+<div id="timerContainer">
+    <input type="number" id="timerSeconds" placeholder="Seconds" min="1">
+    <button id="startTimer">Start Timer</button>
+    <button id="stopTimer">Stop Timer</button>
+</div>
+
+
+    <!-- New Input and Button for Adding Slide -->
+    <div id="addSlideContainer">
+        <input type="number" id="addSlideIndex" placeholder="Insert at Index" min="1">
+        <button id="addSlide">Add Slide</button>
+    </div>
+
+    <!-- New Input and Button for Deleting Specific Slide -->
+    <div id="deleteSlideContainer">
+        <input type="number" id="deleteSlideIndex" placeholder="Delete Slide Number" min="1">
+        <button id="deleteSlide">Delete Slide</button>
+    </div>
+
+    <!-- New Input and Button for Undoing Specific Slide Deletion -->
+    <div id="undoSlideContainer">
+        <input type="number" id="undoSlideIndex" placeholder="Undo Slide Number" min="1">
+        <button id="undoSlide">Undo Slide Deletion</button>
+    </div>
+
+    <script>
+        const rows = 15;
+        const cols = 30;
+        const grid = document.getElementById('grid');
+        let currentPatternIndex = -1; // No pattern loaded initially
+        let undoStack = []; // Stack to store deleted patterns
+
+        let cells = [];
+
+        function createGrid(pattern = null) {
+            grid.innerHTML = ''; // Clear the grid
+            cells = [];
+            for (let i = 0; i < rows * cols; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => {
+                    cell.classList.toggle('filled');
+                    autoSave();
+                });
+                const number = document.createElement('span');
+                number.textContent = i + 1;
+                number.classList.add('number');
+                cell.appendChild(number);
+
+                grid.appendChild(cell);
+                cells.push(cell);
+            }
+
+            if (pattern) {
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        const cell = cells[i * cols + j];
+                        cell.classList.toggle('filled', pattern[i * cols + j] === '1');
+                    }
+                }
+            }
+        }
+
+        function autoSave() {
+            if (currentPatternIndex !== -1) {
+                const pattern = [];
+                for (let i = 0; i < rows; i++) {
+                    let rowPattern = '';
+                    for (let j = 0; j < cols; j++) {
+                        const cell = cells[i * cols + j];
+                        rowPattern += cell.classList.contains('filled') ? '1' : '0';
+                    }
+                    pattern.push(rowPattern);
+                }
+                const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+                existingPatterns[currentPatternIndex] = pattern.join('');
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+            }
+        }
+
+        document.getElementById('submit').addEventListener('click', () => {
+            const pattern = [];
+            for (let i = 0; i < rows; i++) {
+                let rowPattern = '';
+                for (let j = 0; j < cols; j++) {
+                    const cell = cells[i * cols + j];
+                    rowPattern += cell.classList.contains('filled') ? '1' : '0';
+                }
+                pattern.push(rowPattern);
+            }
+
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            existingPatterns.push(pattern.join(''));
+            currentPatternIndex = existingPatterns.length - 1; // Set to the new pattern index
+            document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+            console.log('Updated patterns:', JSON.stringify(existingPatterns));
+        });
+
+        document.getElementById('export').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            const blob = new Blob([JSON.stringify(existingPatterns)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'patterns.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        document.getElementById('previous').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (currentPatternIndex > 0) {
+                currentPatternIndex--;
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('next').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (currentPatternIndex < existingPatterns.length - 1) {
+                currentPatternIndex++;
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('search').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            const searchIndex = document.getElementById('searchIndex').value - 1;
+            if (searchIndex >= 0 && searchIndex < existingPatterns.length) {
+                currentPatternIndex = searchIndex;
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('new').addEventListener('click', () => {
+            createGrid();
+            currentPatternIndex = -1; // Reset pattern index
+            document.getElementById("rowNumber").textContent = `Index : 0`;
+        });
+
+        document.getElementById('clearAll').addEventListener('click', () => {
+            cells.forEach(cell => cell.classList.remove('filled'));
+            autoSave();
+        });
+
+        document.getElementById('selectAll').addEventListener('click', () => {
+            cells.forEach(cell => cell.classList.add('filled'));
+            autoSave();
+        });
+
+        document.getElementById('copy').addEventListener('click', () => {
+            const copiedPattern = cells.map(cell => cell.classList.contains('filled') ? '1' : '0').join('');
+            localStorage.setItem('copiedPattern', copiedPattern);
+        });
+
+        document.getElementById('paste').addEventListener('click', () => {
+            const copiedPattern = localStorage.getItem('copiedPattern');
+            if (copiedPattern) {
+                cells.forEach((cell, index) => {
+                    cell.classList.toggle('filled', copiedPattern[index] === '1');
+                });
+                autoSave();
+            }
+        });
+
+        document.getElementById('shiftLeft').addEventListener('click', () => {
+            shiftGrid('left');
+        });
+
+        document.getElementById('shiftRight').addEventListener('click', () => {
+            shiftGrid('right');
+        });
+
+        document.getElementById('shiftUp').addEventListener('click', () => {
+            shiftGrid('up');
+        });
+
+        document.getElementById('shiftDown').addEventListener('click', () => {
+            shiftGrid('down');
+        });
+
+        function shiftGrid(direction) {
+            const newCells = Array(rows * cols).fill('0');
+            cells.forEach((cell, index) => {
+                if (cell.classList.contains('filled')) {
+                    const row = Math.floor(index / cols);
+                    const col = index % cols;
+                    let newRow = row, newCol = col;
+                    switch (direction) {
+                        case 'left':
+                            newCol = (col - 1 + cols) % cols;
+                            break;
+                        case 'right':
+                            newCol = (col + 1) % cols;
+                            break;
+                        case 'up':
+                            newRow = (row - 1 + rows) % rows;
+                            break;
+                        case 'down':
+                            newRow = (row + 1) % rows;
+                            break;
+                    }
+                    newCells[newRow * cols + newCol] = '1';
+                }
+            });
+            cells.forEach((cell, index) => {
+                cell.classList.toggle('filled', newCells[index] === '1');
+            });
+            autoSave();
+        }
+
+        function loadPattern(index) {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (index >= 0 && index < existingPatterns.length) {
+                const pattern = existingPatterns[index];
+                createGrid(pattern);
+            }
+        }
+
+        document.getElementById('deleteSpecific').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            const deleteIndex = document.getElementById('deleteSlideIndex').value - 1;
+            if (deleteIndex >= 0 && deleteIndex < existingPatterns.length) {
+                undoStack.push({ pattern: existingPatterns[deleteIndex], index: deleteIndex });
+                existingPatterns.splice(deleteIndex, 1);
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+                if (currentPatternIndex === deleteIndex) {
+                    currentPatternIndex = -1;
+                    createGrid();
+                } else if (currentPatternIndex > deleteIndex) {
+                    currentPatternIndex--;
+                    loadPattern(currentPatternIndex);
+                }
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('deleteCurrent').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (currentPatternIndex >= 0 && currentPatternIndex < existingPatterns.length) {
+                undoStack.push({ pattern: existingPatterns[currentPatternIndex], index: currentPatternIndex });
+                existingPatterns.splice(currentPatternIndex, 1);
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+                currentPatternIndex = -1;
+                createGrid();
+                document.getElementById("rowNumber").textContent = `Index : 0`;
+            }
+        });
+
+        document.getElementById('uploadImage').addEventListener('click', () => {
+            document.getElementById('imageInput').click();
+        });
+
+        document.getElementById('imageInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const image = new Image();
+                    image.src = e.target.result;
+                    image.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = cols;
+                        canvas.height = rows;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(image, 0, 0, cols, rows);
+                        const imageData = ctx.getImageData(0, 0, cols, rows).data;
+                        for (let i = 0; i < rows; i++) {
+                            for (let j = 0; j < cols; j++) {
+                                const pixelIndex = (i * cols + j) * 4;
+                                const avg = (imageData[pixelIndex] + imageData[pixelIndex + 1] + imageData[pixelIndex + 2]) / 3;
+                                cells[i * cols + j].classList.toggle('filled', avg < 128);
+                            }
+                        }
+                        autoSave();
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('uploadJson').addEventListener('click', () => {
+            document.getElementById('jsonInput').click();
+        });
+
+        document.getElementById('jsonInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const importedPatterns = JSON.parse(e.target.result);
+                    localStorage.setItem('patterns', JSON.stringify(importedPatterns));
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('addSlide').addEventListener('click', () => {
+            const newSlideIndex = document.getElementById('addSlideIndex').value - 1;
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (newSlideIndex >= 0 && newSlideIndex <= existingPatterns.length) {
+                const newPattern = Array(rows * cols).fill('0').join('');
+                existingPatterns.splice(newSlideIndex, 0, newPattern);
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+                currentPatternIndex = newSlideIndex;
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('deleteSlide').addEventListener('click', () => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            const deleteIndex = document.getElementById('deleteSlideIndex').value - 1;
+            if (deleteIndex >= 0 && deleteIndex < existingPatterns.length) {
+                undoStack.push({ pattern: existingPatterns[deleteIndex], index: deleteIndex });
+                existingPatterns.splice(deleteIndex, 1);
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+                if (currentPatternIndex === deleteIndex) {
+                    currentPatternIndex = -1;
+                    createGrid();
+                } else if (currentPatternIndex > deleteIndex) {
+                    currentPatternIndex--;
+                    loadPattern(currentPatternIndex);
+                }
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('undoSlide').addEventListener('click', () => {
+            const undoIndex = document.getElementById('undoSlideIndex').value - 1;
+            if (undoIndex >= 0 && undoIndex < undoStack.length) {
+                const { pattern, index } = undoStack[undoIndex];
+                const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+                existingPatterns.splice(index, 0, pattern);
+                localStorage.setItem('patterns', JSON.stringify(existingPatterns));
+                undoStack.splice(undoIndex, 1);
+                if (currentPatternIndex >= index) {
+                    currentPatternIndex++;
+                }
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        });
+
+        document.getElementById('uploadAudio').addEventListener('click', () => {
+    document.getElementById('audioInput').click();
+});
+
+document.getElementById('audioInput').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const audio = document.getElementById('audio');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            audio.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Function to format time in MM:SS format
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+document.getElementById('uploadAudio').addEventListener('click', () => {
+    document.getElementById('audioInput').click();
+});
+
+document.getElementById('audioInput').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const audio = document.getElementById('audio');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            audio.src = e.target.result;
+            audio.load(); // Load the new audio file
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+let timerInterval = null; // Variable to store timer interval
+let audioInterval = null; // Variable to store audio update interval
+
+// Function to format time in MM:SS format
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+document.getElementById('startTimer').addEventListener('click', () => {
+    const timerSeconds = parseInt(document.getElementById('timerSeconds').value, 10);
+    if (!isNaN(timerSeconds) && timerSeconds > 0) {
+        // Clear any existing timer intervals
+        clearInterval(timerInterval);
+        clearInterval(audioInterval);
+
+        const audio = document.getElementById('audio');
+        audio.play(); // Start audio playback
+        
+        timerInterval = setInterval(() => {
+            const existingPatterns = JSON.parse(localStorage.getItem('patterns')) || [];
+            if (existingPatterns.length > 0) {
+                // Move to the next pattern, or loop back to the first one
+                if (currentPatternIndex < existingPatterns.length - 1) {
+                    currentPatternIndex++;
+                } else {
+                    currentPatternIndex = 0;
+                }
+                loadPattern(currentPatternIndex);
+                document.getElementById("rowNumber").textContent = `Index : ${currentPatternIndex + 1}`;
+            }
+        }, timerSeconds * 1000);
+
+        // Update audio current time display
+        audioInterval = setInterval(() => {
+            if (!audio.paused) {
+                document.getElementById('audioCurrentTime').textContent = `Current Time: ${formatTime(audio.currentTime)}`;
+            }
+        }, 1000); // Update every second
+    }
+});
+
+document.getElementById('stopTimer').addEventListener('click', () => {
+    clearInterval(timerInterval);
+    clearInterval(audioInterval);
+    timerInterval = null;
+    audioInterval = null;
+
+    // Stop audio playback
+    const audio = document.getElementById('audio');
+    audio.pause();
+    audio.currentTime = 0;
+});
+
+
+        // Load the initial grid
+        createGrid();
+    </script>
+</body>
+</html>
+
