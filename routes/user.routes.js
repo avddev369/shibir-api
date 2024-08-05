@@ -11,6 +11,9 @@ module.exports = app => {
     router.post("/getPattern", user.getPattern)
     router.get("/getPositionWiseDataApp", user.getPositionWiseDataApp)
     router.post("/truncateDb", user.truncateDb)
+
+    router.get("/getAllUserData", user.getAllUserData);
+    router.post("/getUniqueId", user.getUniqueId);
     
     app.use("/", router);
 };

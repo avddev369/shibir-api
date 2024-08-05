@@ -32,12 +32,12 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (message) => {
         const data = JSON.parse(message);
         console.log(data);
-        if (data.type === 'colorUpdate' || data.type === 'imageData'|| data.type === 'flash' || data.type === 'pattern' ) {
-            // Broadcast message to all connected users
-            Object.values(connectedUsers).forEach(user => {
-                user.ws.send(JSON.stringify(data));
-            });
-        }
+        // if (data.type === 'colorUpdate' || data.type === 'imageData'|| data.type === 'flash' || data.type === 'pattern' ) {
+        //     // Broadcast message to all connected users
+        //     Object.values(connectedUsers).forEach(user => {
+        //         user.ws.send(JSON.stringify(data));
+        //     });
+        // }
         
         Object.values(connectedUsers).forEach(user => {
             user.ws.send(JSON.stringify(data));

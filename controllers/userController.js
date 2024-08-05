@@ -224,3 +224,42 @@ exports.truncateDb = async (req, res) => {
         res.status(500).json({ error: 'Failed to truncate table.' });
     }
 };
+
+
+exports.getUniqueId = async (req, res) => {
+    try {
+
+        const existingPosition = await db.yuvakPostions.findOne({
+            where: { deviceId: req.body['deviceId'] }
+        });
+
+        if (existingPosition) {
+
+            myRes.successResponse(res, existingPosition);
+        } else {
+            const newPosition = await db.yuvakPostions.create({
+                deviceId: req.body['deviceId'],
+                top: req.body['top'],
+                bottom: req.body['bottom'],
+                left: req.body['left'],
+                right: req.body['right'],
+                pos: req.body['pos'],
+            });
+            myRes.successResponse(res, newPosition);
+        }
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
+};
+
+
+exports.getAllUserData = async (req, res) => {
+    try {
+        const existingPosition = await db.yuvakPostions.findAll();
+        myRes.successResponse(res, existingPosition);
+    } catch (error) {
+        console.log(error);
+        myRes.errorResponse(res, error.message);
+    }
+};
