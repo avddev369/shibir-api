@@ -173,7 +173,23 @@ exports.getPositionWiseDataApp = async (req, res) => {
 
 exports.getUserData = async (req, res) => {
     try {
-        const positions = await db.yuvakPostions.findAll();
+        const positions = await db.yuvakPostions.findAll(
+            {
+                where: {
+                    top: {
+                        [Sequelize.Op.ne]: '#'
+                    },
+                    bottom: {
+                        [Sequelize.Op.ne]: '#'
+                    },
+                    left: {
+                        [Sequelize.Op.ne]: '#'
+                    },
+                    right: {
+                        [Sequelize.Op.ne]: '#'
+                    },
+                }
+            });
 
         const formattedData = positions.reduce((acc, position) => {
             acc[position.userId] = {
@@ -215,7 +231,7 @@ exports.truncateDb = async (req, res) => {
         await db.yuvakPostions.destroy({
             where: {},
             truncate: true,
-            restartIdentity: true  
+            restartIdentity: true
         });
 
         res.json({ message: 'Table truncated and primary key reset successfully.' });
