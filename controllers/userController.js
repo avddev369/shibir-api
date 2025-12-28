@@ -173,23 +173,15 @@ exports.getPositionWiseDataApp = async (req, res) => {
 
 exports.getUserData = async (req, res) => {
     try {
-        const positions = await db.yuvakPostions.findAll(
-            {
-                where: {
-                    top: {
-                        [Sequelize.Op.ne]: '#'
-                    },
-                    bottom: {
-                        [Sequelize.Op.ne]: '#'
-                    },
-                    left: {
-                        [Sequelize.Op.ne]: '#'
-                    },
-                    right: {
-                        [Sequelize.Op.ne]: '#'
-                    },
-                }
-            });
+        const positions = await db.yuvakPostions.findAll({
+            where: {
+                top: { [db.Sequelize.Op.ne]: '#' },
+                bottom: { [db.Sequelize.Op.ne]: '#' },
+                left: { [db.Sequelize.Op.ne]: '#' },
+                right: { [db.Sequelize.Op.ne]: '#' }
+            }
+        });
+        
 
         const formattedData = positions.reduce((acc, position) => {
             acc[position.userId] = {

@@ -1,4 +1,4 @@
-wscat -c ws://27.116.52.24:8080
+wscat -c ws://api.hpparam.com:8080
 
 //Set Postion
 {"type":"setPosition"}

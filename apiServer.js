@@ -43,7 +43,7 @@ app.post("/", (req, res) => {
 
 const PORT = process.env.SERVER_LOCAL_PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server listening on port http://27.116.52.24:${PORT}`);
+    console.log(`Server listening on port http://api.hpparam.com:${PORT}`);
 });
 
 function appendStudentData(newData) {
